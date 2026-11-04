@@ -27,6 +27,7 @@
   --accent:#2dd4bf; --accent-ink:#06201d; --in:#4ade80; --out:#f87171; --overlay:rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 body{min-height:100vh;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(12px + env(safe-area-inset-top)) 16px 8px}
@@ -222,7 +223,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     <button type="button" class="btn soft" id="bkExport">Exportar backup</button>
     <button type="button" class="btn soft" id="bkImportBtn">Importar backup</button>
   </div>
-  <input type="file" id="bkFile" accept="application/json,.json" hidden>
+  <input type="file" id="bkFile" accept="application/json,text/plain,.json,.txt" hidden>
   <div class="choice" id="bkConfirm" hidden>
     <p id="bkMsg"></p>
     <button type="button" class="btn warn" id="bkYes">Substituir meus dados</button>
@@ -442,12 +443,17 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   }
   $('bkExport').onclick = async () => {
     db.ultimoBackup = Date.now(); save();
-    const nome = 'financas-backup-' + isoToday() + '.json';
-    const blob = new Blob([JSON.stringify({app:'minhas-financas', versao:1, exportado:new Date().toISOString(), dados:db}, null, 1)], {type:'application/json'});
-    try{
-      const file = new File([blob], nome, {type:'application/json'});
-      if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:nome}); renderBackup(); toast('Backup pronto'); return; }
-    }catch(e){ if(e && e.name==='AbortError'){ return; } }
+    const base = 'financas-backup-' + isoToday();
+    const conteudo = JSON.stringify({app:'minhas-financas', versao:1, exportado:new Date().toISOString(), dados:db}, null, 1);
+    const blob = new Blob([conteudo], {type:'application/json'});
+    const nome = base + '.json';
+    // Android só compartilha alguns tipos de arquivo; tenta .json e depois .txt
+    const opcoes = [new File([conteudo], base+'.json', {type:'application/json'}), new File([conteudo], base+'.txt', {type:'text/plain'})];
+    for(const file of opcoes){
+      try{
+        if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:file.name}); renderBackup(); toast('Backup pronto'); return; }
+      }catch(e){ if(e && e.name==='AbortError'){ toast('Backup cancelado'); return; } }
+    }
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
     renderBackup(); toast('Backup salvo em Downloads');
