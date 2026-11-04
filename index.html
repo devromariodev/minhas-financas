@@ -79,7 +79,18 @@ input.big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
 .choice .btn{width:100%}
 .btn.warn{background:var(--out);color:#fff}
 .btn.soft{background:var(--card);color:var(--text);box-shadow:0 0 0 1px var(--line) inset}
-.month h1{flex:1;text-align:center}
+.month h1{flex:1;text-align:center;margin:0}
+.mbtn{border:0;background:transparent;color:var(--text);font:inherit;font-size:18px;font-weight:700;padding:8px 10px;border-radius:10px;width:100%}
+.mbtn:active{background:var(--card)}
+.mbtn::after{content:" ▾";font-size:12px;color:var(--muted)}
+.yearbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.yearbar b{font-size:20px;font-variant-numeric:tabular-nums}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mgrid button{border:0;background:var(--bg);color:var(--text);border-radius:12px;padding:14px 4px 10px;font:inherit;font-size:15px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mgrid button small{font-size:11px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;min-height:14px}
+.mgrid button.cur{box-shadow:0 0 0 2px var(--text) inset}
+.mgrid button.sel{background:var(--accent);color:var(--accent-ink)}
+.mgrid button.sel small{color:var(--accent-ink)}
 .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 0 0 1px var(--line) inset;margin-bottom:10px}
 .card h3{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.02em}
 .card .summary{margin:0}
@@ -137,7 +148,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 <header>
   <div class="month">
     <button class="iconbtn" id="prev" aria-label="Mês anterior">‹</button>
-    <h1 id="monthTitle"></h1>
+    <h1><button type="button" class="mbtn" id="monthTitle" aria-label="Escolher mês"></button></h1>
     <button class="iconbtn" id="next" aria-label="Próximo mês">›</button>
     <button class="iconbtn" id="gear" aria-label="Personalizar">⚙</button>
   </div>
@@ -218,6 +229,19 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     <button type="button" class="btn ghost" id="bkNo">Cancelar</button>
   </div>
   <button type="button" class="btn primary" id="pclose" style="width:100%;margin-top:16px">Pronto</button>
+</div>
+
+<div class="sheet" id="msheet">
+  <div class="yearbar">
+    <button type="button" class="iconbtn" id="yPrev" aria-label="Ano anterior">‹</button>
+    <b id="yLabel"></b>
+    <button type="button" class="iconbtn" id="yNext" aria-label="Próximo ano">›</button>
+  </div>
+  <div class="mgrid" id="mgrid"></div>
+  <div class="actions">
+    <button type="button" class="btn ghost" id="mClose">Fechar</button>
+    <button type="button" class="btn primary" id="mHoje">Ir para o mês atual</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -631,7 +655,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   $('choiceOne').onclick = () => pending==='del' ? applyDelete('one') : applyEdit('one');
   $('choiceAll').onclick = () => pending==='del' ? applyDelete('all') : applyEdit('all');
 
-  function closeSheet(){ voltarLanc=false; $('sheetBg').classList.remove('open'); $('sheet').classList.remove('open'); $('psheet').classList.remove('open'); document.activeElement && document.activeElement.blur(); }
+  function closeSheet(){ voltarLanc=false; $('sheetBg').classList.remove('open'); $('sheet').classList.remove('open'); $('psheet').classList.remove('open'); $('msheet').classList.remove('open'); document.activeElement && document.activeElement.blur(); }
 
   // valor estilo maquininha: digita 1234 -> R$ 12,34
   $('fValor').addEventListener('input', e => {
@@ -679,6 +703,30 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   $('fab').onclick = openSheet;
   $('cancel').onclick = closeSheet;
   $('sheetBg').onclick = closeSheet;
+  // ---------- Seletor de mês ----------
+  let pickY = viewY;
+  function renderMeses(){
+    $('yLabel').textContent = pickY;
+    const g=$('mgrid'); g.innerHTML='';
+    const hoje=new Date();
+    for(let m=0;m<12;m++){
+      const k=pickY+'-'+pad(m+1);
+      const doMes=db.lancamentos.filter(l=>l.data.startsWith(k));
+      let bal=0; doMes.forEach(l=>bal+= l.tipo==='entrada'?l.valor:-l.valor);
+      const b=document.createElement('button'); b.type='button';
+      b.className=(pickY===viewY&&m===viewM?'sel ':'')+(pickY===hoje.getFullYear()&&m===hoje.getMonth()?'cur':'');
+      const nome=cap(new Date(pickY,m,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.',''));
+      b.innerHTML=`<span>${nome}</span><small>${doMes.length? (bal<0?'−':'')+brl(Math.abs(bal)).replace('R$\u00a0','').replace('R$ ','') : ''}</small>`;
+      b.onclick=()=>{ viewY=pickY; viewM=m; closeSheet(); render(); };
+      g.appendChild(b);
+    }
+  }
+  $('monthTitle').onclick=()=>{ pickY=viewY; renderMeses(); $('sheetBg').classList.add('open'); $('msheet').classList.add('open'); };
+  $('yPrev').onclick=()=>{ pickY--; renderMeses(); };
+  $('yNext').onclick=()=>{ pickY++; renderMeses(); };
+  $('mClose').onclick=()=>closeSheet();
+  $('mHoje').onclick=()=>{ const t=new Date(); viewY=t.getFullYear(); viewM=t.getMonth(); closeSheet(); render(); };
+
   $('prev').onclick = () => { viewM--; if(viewM<0){viewM=11;viewY--;} render(); };
   $('next').onclick = () => { viewM++; if(viewM>11){viewM=0;viewY++;} render(); };
 
