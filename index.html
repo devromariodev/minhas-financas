@@ -85,7 +85,14 @@ input.big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
 .mbtn:active{background:var(--card)}
 .mbtn::after{content:" ▾";font-size:12px;color:var(--muted)}
 .yearbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.yearbar b{font-size:20px;font-variant-numeric:tabular-nums}
+.ybtn{border:0;background:transparent;color:var(--text);font:inherit;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px}
+.ybtn::after{content:" ▾";font-size:12px;color:var(--muted)}
+.ybtn.open::after{content:" ▴"}
+.ybtn:active{background:var(--bg)}
+.ygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ygrid button{border:0;background:transparent;color:var(--muted);border-radius:10px;padding:10px 4px;font:inherit;font-size:15px;font-variant-numeric:tabular-nums}
+.ygrid button.tem{color:var(--text);font-weight:600}
+.ygrid button.sel{background:var(--accent);color:var(--accent-ink)}
 .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .mgrid button{border:0;background:var(--bg);color:var(--text);border-radius:12px;padding:14px 4px 10px;font:inherit;font-size:15px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px}
 .mgrid button small{font-size:11px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;min-height:14px}
@@ -268,10 +275,11 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 <div class="sheet" id="msheet">
   <div class="yearbar">
     <button type="button" class="iconbtn" id="yPrev" aria-label="Ano anterior">‹</button>
-    <b id="yLabel"></b>
+    <button type="button" class="ybtn" id="yLabel" aria-label="Escolher ano"></button>
     <button type="button" class="iconbtn" id="yNext" aria-label="Próximo ano">›</button>
   </div>
   <div class="mgrid" id="mgrid"></div>
+  <div class="ygrid" id="ygrid" hidden></div>
   <div class="actions">
     <button type="button" class="btn ghost" id="mClose">Fechar</button>
     <button type="button" class="btn primary" id="mHoje">Ir para o mês atual</button>
@@ -873,6 +881,23 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   $('sheetBg').onclick = closeSheet;
   // ---------- Seletor de mês ----------
   let pickY = viewY;
+  function renderAnos(){
+    const g=$('ygrid'); g.innerHTML='';
+    const anos=db.lancamentos.map(l=>+l.data.slice(0,4)); const hj=new Date().getFullYear();
+    const de=Math.min(hj-3, ...anos.filter(a=>a>=hj-30)), ate=Math.max(hj+4, pickY);
+    const comDados=new Set(db.lancamentos.filter(l=>!l.recorrenteId || l.pago).map(l=>+l.data.slice(0,4)));
+    for(let a=de;a<=ate;a++){
+      const b=document.createElement('button'); b.type='button'; b.textContent=a;
+      b.className=(a===pickY?'sel ':'')+(comDados.has(a)||a===hj?'tem':'');
+      b.onclick=()=>{ pickY=a; mostrarAnos(false); renderMeses(); };
+      g.appendChild(b);
+    }
+  }
+  function mostrarAnos(on){
+    $('ygrid').hidden=!on; $('mgrid').hidden=on; $('yLabel').classList.toggle('open', on);
+    if(on) renderAnos();
+  }
+  $('yLabel').onclick=()=>mostrarAnos($('ygrid').hidden);
   function renderMeses(){
     $('yLabel').textContent = pickY;
     const g=$('mgrid'); g.innerHTML='';
@@ -889,9 +914,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
       g.appendChild(b);
     }
   }
-  $('monthTitle').onclick=()=>{ pickY=viewY; renderMeses(); $('sheetBg').classList.add('open'); $('msheet').classList.add('open'); };
-  $('yPrev').onclick=()=>{ pickY--; renderMeses(); };
-  $('yNext').onclick=()=>{ pickY++; renderMeses(); };
+  $('monthTitle').onclick=()=>{ pickY=viewY; mostrarAnos(false); renderMeses(); $('sheetBg').classList.add('open'); $('msheet').classList.add('open'); };
+  $('yPrev').onclick=()=>{ pickY--; mostrarAnos(false); renderMeses(); };
+  $('yNext').onclick=()=>{ pickY++; mostrarAnos(false); renderMeses(); };
   $('mClose').onclick=()=>closeSheet();
   $('mHoje').onclick=()=>{ const t=new Date(); viewY=t.getFullYear(); viewM=t.getMonth(); closeSheet(); render(); };
 
