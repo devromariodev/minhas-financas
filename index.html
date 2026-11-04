@@ -172,7 +172,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     <button type="button" data-t="saida" class="on">Saída</button>
     <button type="button" data-t="entrada">Entrada</button>
   </div>
-  <label for="fValor" id="valorLabel">Valor total</label>
+  <label for="fValor" id="valorLabel">Valor</label>
   <input id="fValor" class="big" inputmode="numeric" placeholder="R$ 0,00" required>
   <label for="fNome">Nome</label>
   <input id="fNome" placeholder="Ex.: Mercado, Salário, Celular" required maxlength="60">
@@ -590,7 +590,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     const n = Math.max(1, parseInt($('fParc').value)||1);
     const data = $('fData').value, ct = pagSel && cartaoOf(pagSel);
     const partes = [];
-    if(n>1 && valorCents>0) partes.push(`${n}x de ${brl(Math.floor(valorCents/n))}`);
+    if(!editId) $('valorLabel').textContent = n>1 ? 'Valor de cada parcela' : 'Valor';
+    if(n>1 && valorCents>0) partes.push(`${n}x de ${brl(valorCents)} = ${brl(valorCents*n)}`);
     if(data && ct){
       const v1 = vencimento(data, ct, 0);
       partes.push(`1ª na fatura que vence ${v1.slice(8)}/${v1.slice(5,7)}` + (n>1 ? `, última em ${mesAno(vencimento(data, ct, n-1))}` : ''));
@@ -611,7 +612,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   }
   function setMode(edit, l){
     $('sheetTitle').textContent = edit ? 'Editar lançamento' : 'Novo lançamento';
-    $('valorLabel').textContent = edit && l.totalParcelas>1 ? `Valor da parcela ${l.parcela}/${l.totalParcelas}` : (edit ? 'Valor' : 'Valor total');
+    $('valorLabel').textContent = edit && l.totalParcelas>1 ? `Valor da parcela ${l.parcela}/${l.totalParcelas}` : 'Valor';
     $('parcBox').hidden = !!edit; $('parcHint').hidden = !!edit; $('pagBox').hidden = !!edit;
     $('dataLabel').textContent = edit && l.cartaoId ? 'Data (vencimento da fatura)' : 'Data';
     $('del').hidden = !edit;
@@ -687,7 +688,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     if(!catSel){ toast('Escolha uma categoria'); return; }
     if(editId){ ask('save'); return; }
     // divide o total; os centavos que sobram vão na 1ª parcela
-    const base = Math.floor(valorCents/n), resto = valorCents - base*n;
+    // o valor digitado é o de cada parcela (já com juros, se houver)
     const ct = pagSel && cartaoOf(pagSel);
     const grupo = uid(), criado = Date.now();
     for(let i=0;i<n;i++){
@@ -695,7 +696,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
         id: uid(), grupoId: grupo, criado,
         data: ct ? vencimento(data, ct, i) : addMonths(data, i), nome, tipo,
         dataCompra: data, cartaoId: ct ? ct.id : null,
-        valor: base + (i===0 ? resto : 0),
+        valor: valorCents,
         categoriaId: catSel, cor: corSel, parcela: i+1, totalParcelas: n
       });
     }
