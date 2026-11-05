@@ -150,6 +150,21 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 .seg3 button.on{background:var(--accent)!important;color:var(--accent-ink)!important}
 .toast{position:fixed;left:50%;bottom:calc(160px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30}
 .toast.show{opacity:1}
+.pizza{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+.pizza svg{width:180px;height:180px;flex:none;align-self:center}
+.pizza svg .c-total{font-size:17px;font-weight:700;fill:var(--text);font-variant-numeric:tabular-nums}
+.pizza svg .c-lbl{font-size:11px;fill:var(--muted)}
+.legenda{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
+.legenda li{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 6px;border-radius:8px}
+.legenda li.tap{cursor:pointer}
+.legenda li.tap:active{background:var(--bg)}
+.legenda .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legenda .pc{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+.legenda b{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.graf-big .pizza{flex-direction:column;align-items:stretch}
+.graf-big .pizza svg{width:220px;height:220px;align-self:center}
+.graf-big .legenda li{font-size:15px;padding:10px 8px;border-bottom:1px solid var(--line);border-radius:0}
+.graf-big .legenda li:last-child{border-bottom:0}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;display:grid;grid-template-columns:1fr 1fr;background:var(--card);border-top:1px solid var(--line);padding:6px max(16px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left, 0px))}
 .tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:8px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .tabs button span{font-size:20px;line-height:1}
@@ -190,7 +205,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   </section>
   <section id="abaLanc" hidden>
     <div class="lhead"><h3 id="lancTitulo">Lançamentos</h3>
-      <div class="minis" role="group" aria-label="Visualização"><button type="button" data-v="lista">Lista</button><button type="button" data-v="tabela">Tabela</button></div>
+      <div class="minis" role="group" aria-label="Visualização"><button type="button" data-v="lista">Lista</button><button type="button" data-v="grafico">Gráfico</button></div>
     </div>
     <div class="filtros" id="filtros"></div>
     <section class="list" id="list"></section>
@@ -316,20 +331,22 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     resumo: 'Resumo do mês (entradas, saídas, saldo)',
     apagar: 'Falta pagar e receber no mês',
     faturas: 'Faturas dos cartões no mês',
-    categorias: 'Gastos por categoria',
+    pizza: 'Gráfico de gastos por categoria',
+    categorias: 'Gastos por categoria (barras e limites)',
     maiores: 'Maiores gastos do mês',
     parcelas: 'Parcelas dos próximos meses',
     comparativo: 'Comparação com o mês anterior'
   };
-  const PAINEL_PADRAO = [{id:'resumo',on:true},{id:'apagar',on:true},{id:'categorias',on:true},{id:'parcelas',on:true},{id:'faturas',on:true},{id:'maiores',on:false},{id:'comparativo',on:false}];
+  const PAINEL_PADRAO = [{id:'resumo',on:true},{id:'apagar',on:true},{id:'pizza',on:true},{id:'categorias',on:true},{id:'parcelas',on:true},{id:'faturas',on:true},{id:'maiores',on:false},{id:'comparativo',on:false}];
   let db = load();
   function migrar(d){
     if(!Array.isArray(d.cartoes)) d.cartoes = [];
     if(!Array.isArray(d.recorrentes)) d.recorrentes = [];
     const hj = isoHoje();
     d.lancamentos.forEach(l => { if(typeof l.pago !== 'boolean') l.pago = l.data <= hj; });
+    if(d.visao==='tabela') d.visao='grafico';
     if(!Array.isArray(d.painel)) d.painel = PAINEL_PADRAO.map(x=>({...x}));
-    Object.keys(CARDS).forEach(id => { if(!d.painel.some(x=>x.id===id)){ const i = id==='apagar' ? Math.min(1,d.painel.length) : d.painel.length; d.painel.splice(i,0,{id, on: id==='apagar'}); } });
+    Object.keys(CARDS).forEach(id => { if(!d.painel.some(x=>x.id===id)){ const i = id==='apagar' ? Math.min(1,d.painel.length) : id==='pizza' ? Math.min(2,d.painel.length) : d.painel.length; d.painel.splice(i,0,{id, on: id==='apagar'||id==='pizza'}); } });
     return d;
   }
   function isoHoje(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -457,19 +474,15 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     const list = $('list'); list.innerHTML='';
     const visao = db.visao || 'lista';
     document.querySelectorAll('.minis button').forEach(b=>b.classList.toggle('on', b.dataset.v===visao));
-    if(!items.length){ list.innerHTML='<div class="empty">Nenhum lançamento neste mês.<br>Toque no <b>+</b> para adicionar.</div>'; return; }
+    $('filtros').hidden = visao==='grafico';
+    if(visao==='grafico') filtroCat=null;
+    if(!items.length && visao!=='grafico'){ list.innerHTML='<div class="empty">Nenhum lançamento neste mês.<br>Toque no <b>+</b> para adicionar.</div>'; return; }
     const cats = Object.fromEntries(db.categorias.map(c=>[c.id,c]));
-    if(visao==='tabela'){
-      const wrap=document.createElement('div'); wrap.className='tblwrap';
-      let tot=0;
-      const linhas = items.slice().sort((a,b)=>a.data.localeCompare(b.data) || a.criado-b.criado).map(l=>{
-        const c = cats[l.categoriaId] || {nome:'Sem categoria', cor:'#94a3b8'};
-        tot += l.tipo==='entrada' ? l.valor : -l.valor;
-        const ct = l.cartaoId && cartaoOf(l.cartaoId);
-        return `<tr class="trow" data-id="${l.id}"><td class="ck"></td><td>${l.data.slice(8)}/${l.data.slice(5,7)}</td><td><div class="nm"><span class="dot" style="background:${l.cor||c.cor}"></span><span>${esc(l.nome)}${l.totalParcelas>1?' <span class="muted" style="font-size:11px">'+l.parcela+'/'+l.totalParcelas+'</span>':''}</span></div><div class="muted" style="font-size:11px;margin-left:14px">${esc(c.nome)}${ct?' · '+esc(ct.nome):''}${l.recorrenteId?' · fixo':''}</div></td><td class="r ${l.tipo==='entrada'?'in':'out'}">${l.tipo==='entrada'?'+':'−'} ${brl(l.valor)}</td></tr>`;
-      }).join('');
-      wrap.innerHTML = `<table class="tbl"><thead><tr><th aria-label="Pago"></th><th>Data</th><th>Nome</th><th class="r">Valor</th></tr></thead><tbody>${linhas}</tbody><tfoot><tr><td colspan="3">Saldo</td><td class="r ${tot<0?'out':tot>0?'in':''}">${brl(tot)}</td></tr></tfoot></table>`;
-      wrap.querySelectorAll('tr.trow').forEach(tr=>{ tr.onclick=()=>openEdit(tr.dataset.id); const l=db.lancamentos.find(x=>x.id===tr.dataset.id); tr.querySelector('.ck').appendChild(chkBtn(l)); });
+    if(visao==='grafico'){
+      const wrap=document.createElement('div'); wrap.className='card graf-big';
+      const saidasMes=todos.filter(l=>l.tipo==='saida');
+      wrap.innerHTML='<h3>Gastos por categoria</h3>'+pizzaHTML(saidasMes)+(saidasMes.length?'<p class="muted" style="font-size:12px;margin-top:10px">Toque numa categoria para ver os lançamentos dela.</p>':'');
+      ligarLegenda(wrap);
       list.appendChild(wrap);
       return;
     }
@@ -501,6 +514,23 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function catOf(id){ return db.categorias.find(c=>c.id===id) || {nome:'Sem categoria', cor:'#94a3b8'}; }
   function monthKey(y,m){ const t=new Date(y,m,1); return t.getFullYear()+'-'+pad(t.getMonth()+1); }
+  // gráfico de rosca (pizza) com os gastos do mês por categoria
+  function pizzaHTML(saidas){
+    const g={}; saidas.forEach(l=>g[l.categoriaId]=(g[l.categoriaId]||0)+l.valor);
+    let rows=Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([id,v])=>({id, v, ...catOf(id)}));
+    if(!rows.length) return '<p class="muted">Sem gastos neste mês.</p>';
+    if(rows.length>7){ const resto=rows.slice(6); rows=rows.slice(0,6); rows.push({id:null, v:resto.reduce((s,x)=>s+x.v,0), nome:'Outras', cor:'#94a3b8'}); }
+    const total=rows.reduce((s,x)=>s+x.v,0), R=70, C=2*Math.PI*R, gap=rows.length>1?1.5:0;
+    let off=0, arcs='';
+    rows.forEach(x=>{ const len=x.v/total*C; arcs+=`<circle cx="100" cy="100" r="${R}" fill="none" stroke="${x.cor}" stroke-width="30" stroke-dasharray="${Math.max(0,len-gap).toFixed(2)} ${(C-Math.max(0,len-gap)).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 100 100)"><title>${esc(x.nome)}: ${brl(x.v)}</title></circle>`; off+=len; });
+    const totTxt = brl(total).replace(/,\d\d$/,'');
+    const leg = rows.map(x=>`<li class="${x.id?'tap':''}" ${x.id?`data-cat="${x.id}"`:''}><span class="dot" style="background:${x.cor}"></span><span class="n">${esc(x.nome)}</span><span class="pc">${Math.round(x.v/total*100)}%</span><b>${brl(x.v)}</b></li>`).join('');
+    return `<div class="pizza"><svg viewBox="0 0 200 200" role="img" aria-label="Gastos por categoria">${arcs}<text x="100" y="98" text-anchor="middle" class="c-total">${totTxt}</text><text x="100" y="116" text-anchor="middle" class="c-lbl">gasto no mês</text></svg><ul class="legenda">${leg}</ul></div>`;
+  }
+  // tocar numa categoria da legenda abre a lista filtrada
+  function ligarLegenda(el){
+    el.querySelectorAll('.legenda li[data-cat]').forEach(li=>li.onclick=()=>{ filtroCat=li.dataset.cat; db.visao='lista'; setAba('lanc'); render(); });
+  }
   function renderPainel(items, prefix){
     const box = $('painel'); box.innerHTML='';
     const saidas = items.filter(l=>l.tipo==='saida');
@@ -510,6 +540,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
         const bal=tin-tout;
         return `<div class="summary"><div class="tile"><small>Entradas</small><b class="in">${brl(tin)}</b></div><div class="tile"><small>Saídas</small><b class="out">${brl(tout)}</b></div><div class="tile wide"><small>Saldo do mês</small><b class="${bal<0?'out':bal>0?'in':''}">${brl(bal)}</b></div></div>`;
       },
+      pizza(){ return pizzaHTML(saidas); },
       apagar(){
         const fp=items.filter(l=>l.tipo==='saida'&&!l.pago), fr=items.filter(l=>l.tipo==='entrada'&&!l.pago);
         const vp=fp.reduce((s,l)=>s+l.valor,0), vr=fr.reduce((s,l)=>s+l.valor,0);
@@ -568,6 +599,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
       const el=document.createElement('div'); el.className='card';
       el.innerHTML = (x.id==='resumo'?'':`<h3>${CARDS[x.id].replace(/ \(.*\)/,'')}</h3>`) + builders[x.id]();
       if(x.id==='resumo'){ el.style.background='transparent'; el.style.boxShadow='none'; el.style.padding='0'; }
+      if(x.id==='pizza') ligarLegenda(el);
       box.appendChild(el);
     });
   }
