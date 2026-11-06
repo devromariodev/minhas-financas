@@ -1,5 +1,5 @@
 // Guarda os arquivos do app no aparelho para funcionar sem internet.
-const CACHE = 'financas-v9';
+const CACHE = 'financas-v10';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
