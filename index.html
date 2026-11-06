@@ -150,6 +150,21 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 .seg3 button.on{background:var(--accent)!important;color:var(--accent-ink)!important}
 .toast{position:fixed;left:50%;bottom:calc(160px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30}
 .toast.show{opacity:1}
+.phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.phead h2{margin:0}
+.helpbtn{border:0;background:var(--bg);color:var(--text);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.helpbtn b{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);align-items:center;justify-content:center;font-size:13px}
+#hsheet details{border-bottom:1px solid var(--line);padding:2px 0}
+#hsheet details:last-of-type{border-bottom:0}
+#hsheet summary{cursor:pointer;list-style:none;padding:13px 2px;font-weight:600;font-size:15px;display:flex;justify-content:space-between;gap:8px}
+#hsheet summary::-webkit-details-marker{display:none}
+#hsheet summary::after{content:"+";color:var(--muted);font-weight:400;font-size:18px;line-height:1}
+#hsheet details[open] summary::after{content:"−"}
+#hsheet details div{padding:0 2px 14px;color:var(--text);font-size:14px;line-height:1.5}
+#hsheet details p{margin:0 0 8px}
+#hsheet details ul{margin:0 0 8px;padding-left:18px}
+#hsheet details li{margin-bottom:4px}
+#hsheet .intro{color:var(--muted);font-size:14px;margin:0 0 8px}
 .busca{position:relative;margin-bottom:8px}
 .busca input{padding:10px 12px 10px 36px;font-size:15px;background:var(--card)}
 .busca svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
@@ -280,7 +295,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 </form>
 
 <div class="sheet" id="psheet">
-  <h2>Personalizar</h2>
+  <div class="phead"><h2>Personalizar</h2><button type="button" class="helpbtn" id="helpBtn"><b>?</b>Ajuda</button></div>
   <div class="psec">Tema</div>
   <div class="seg seg3" id="temaSeg" role="group" aria-label="Tema">
     <button type="button" data-tema="auto">Automático</button>
@@ -315,6 +330,59 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
     <button type="button" class="btn ghost" id="bkNo">Cancelar</button>
   </div>
   <button type="button" class="btn primary" id="pclose" style="width:100%;margin-top:16px">Pronto</button>
+</div>
+
+<div class="sheet" id="hsheet">
+  <h2>Como usar</h2>
+  <p class="intro">Toque num tema para ver a explicação.</p>
+  <details><summary>Lançar uma entrada ou saída</summary><div>
+    <p>Toque no botão <b>+</b>. Escolha <b>Saída</b> ou <b>Entrada</b>, digite o valor (1234 vira R$ 12,34), o nome, a data e a categoria, e salve.</p>
+    <p>Se você já usou aquele nome antes, o app marca sozinho a categoria, o tipo e o cartão da última vez. O campo também sugere nomes que você já lançou.</p>
+  </div></details>
+  <details><summary>Compras parceladas</summary><div>
+    <p>No campo <b>Parcelas</b>, informe a quantidade. O valor digitado é o <b>de cada parcela</b> (com juros, se houver). O app mostra o total antes de salvar e lança uma parcela em cada mês.</p>
+  </div></details>
+  <details><summary>Cartão de crédito</summary><div>
+    <p>Cadastre o cartão em ⚙ → <b>Cartões de crédito</b>, com o dia de fechamento e o de vencimento. No lançamento, escolha o cartão em <b>Forma de pagamento</b>.</p>
+    <p>A compra cai no mês em que a fatura vence. Comprou no dia do fechamento ou depois, vai para a fatura seguinte. O card <b>Faturas dos cartões</b> mostra o total de cada fatura no mês.</p>
+  </div></details>
+  <details><summary>Lançamentos fixos (todo mês)</summary><div>
+    <p>Para salário, aluguel, internet ou assinaturas, marque <b>Repetir todo mês</b> no lançamento. Ele aparece sozinho nos meses seguintes.</p>
+    <p>Ao editar ou excluir, o app pergunta se vale <b>só para este mês</b> ou <b>para este e os próximos</b>. Excluir "este e os próximos" encerra o fixo.</p>
+  </div></details>
+  <details><summary>Pago e a pagar</summary><div>
+    <p>Cada lançamento tem um <b>✓</b> à direita. Toque para marcar como pago (ou recebido). O card <b>Falta pagar e receber</b> mostra o que ainda está pendente no mês.</p>
+    <p>Lançamentos com data até hoje já entram como pagos. Os futuros entram como pendentes.</p>
+  </div></details>
+  <details><summary>Editar ou excluir</summary><div>
+    <p>Toque no lançamento para abrir a edição. Para excluir, use <b>Excluir lançamento</b> no fim do formulário. Em parcelados, você escolhe se vale só para aquela parcela ou para todas.</p>
+  </div></details>
+  <details><summary>Trocar de mês e buscar</summary><div>
+    <p>Use as setas ‹ › no topo ou toque no <b>nome do mês</b> para abrir o calendário. Ali, toque no <b>ano</b> para escolher outro ano.</p>
+    <p>Na aba <b>Lançamentos</b>, o campo de busca procura pelo nome ou categoria em todos os meses. Os chips de categoria filtram a lista do mês.</p>
+  </div></details>
+  <details><summary>Resumo e gráficos</summary><div>
+    <ul>
+      <li><b>Resumo do mês:</b> entradas, saídas e saldo.</li>
+      <li><b>Saldo acumulado:</b> tudo que entrou menos tudo que saiu até o fim do mês aberto, somando o saldo inicial.</li>
+      <li><b>Gráfico de pizza:</b> gastos por categoria. Toque numa categoria para ver os lançamentos dela.</li>
+      <li><b>Parcelas dos próximos meses:</b> quanto já está comprometido.</li>
+      <li><b>Resumo do ano:</b> entradas e saídas dos 12 meses.</li>
+    </ul>
+    <p>Em ⚙ → <b>Painel</b> você liga, desliga e muda a ordem dos cards.</p>
+  </div></details>
+  <details><summary>Limites e metas</summary><div>
+    <p><b>Limite por categoria:</b> em ⚙ → Categorias, defina um teto por mês. A barra fica amarela a partir de 80% e vermelha quando passa.</p>
+    <p><b>Metas de economia:</b> em ⚙ → Metas, informe o nome, o valor, quanto já tem e o prazo. O card mostra quanto guardar por mês. Use o campo <b>Guardar</b> no card para ir somando.</p>
+  </div></details>
+  <details><summary>Personalizar</summary><div>
+    <p>Em ⚙ você escolhe o tema (claro, escuro ou automático), cria categorias com cor, define o saldo inicial e organiza o painel. No lançamento, também dá para escolher uma cor só para ele.</p>
+  </div></details>
+  <details><summary>Backup e troca de celular</summary><div>
+    <p>Seus dados ficam <b>só neste celular</b>, nada vai para a internet. Por isso faça backup: ⚙ → <b>Exportar backup</b> e salve o arquivo no Drive, e-mail ou WhatsApp.</p>
+    <p>Para restaurar ou trocar de celular, instale o app de novo e use ⚙ → <b>Importar backup</b>. Volta tudo como estava no dia do backup. O app avisa se passar 7 dias sem backup.</p>
+  </div></details>
+  <button type="button" class="btn primary" id="hclose" style="width:100%;margin-top:16px">Voltar</button>
 </div>
 
 <div class="sheet" id="msheet">
@@ -807,6 +875,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   }
   function openPersonalizar(){ renderPersonalizar(); $('sheetBg').classList.add('open'); $('psheet').classList.add('open'); }
   $('gear').onclick=openPersonalizar;
+  $('helpBtn').onclick=()=>{ $('psheet').classList.remove('open'); $('hsheet').scrollTop=0; $('hsheet').classList.add('open'); };
+  $('hclose').onclick=()=>{ $('hsheet').classList.remove('open'); $('psheet').classList.add('open'); };
   document.querySelectorAll('#temaSeg button').forEach(b=>b.onclick=()=>{ db.tema=b.dataset.tema; save(); aplicarTema(); });
   document.querySelectorAll('.minis button').forEach(b=>b.onclick=()=>{ db.visao=b.dataset.v; save(); render(); });
   try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', aplicarTema); }catch(e){}
@@ -964,7 +1034,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
   $('choiceOne').onclick = () => pending==='del' ? applyDelete('one') : applyEdit('one');
   $('choiceAll').onclick = () => pending==='del' ? applyDelete('all') : applyEdit('all');
 
-  function closeSheet(){ voltarLanc=false; $('sheetBg').classList.remove('open'); $('sheet').classList.remove('open'); $('psheet').classList.remove('open'); $('msheet').classList.remove('open'); document.activeElement && document.activeElement.blur(); }
+  function closeSheet(){ voltarLanc=false; $('sheetBg').classList.remove('open'); $('sheet').classList.remove('open'); $('psheet').classList.remove('open'); $('msheet').classList.remove('open'); $('hsheet').classList.remove('open'); document.activeElement && document.activeElement.blur(); }
 
   // valor estilo maquininha: digita 1234 -> R$ 12,34
   // categoria automática: repete a categoria e o tipo da última vez que esse nome foi usado
